@@ -2,10 +2,87 @@ import operator
 from typing import Any, List, Dict
 
 from data.annotations import annotations
-from data.image_processing import frame_crosses_middle, find_midpoint
 from data.constants import yonkoma
-mesh = 20
+from data.image_processing import frame_crosses_middle, find_midpoint
 
+
+def text_order(title, page_no) -> List[str]:
+    frames = frame_order(title, page_no)
+    text = text_in_frames(title,page_no)
+    final_order = []
+    for frame in frames:
+        final_order.extend(text_order_in_frame(text[frame]))
+    return final_order
+
+
+def text_order_in_frame(text_boxes: List[Dict[str,Any]]) -> List[str]:
+
+    if len(text_boxes) == 0:
+        return []
+    id_to_text = {}
+    for text in text_boxes:
+        id = text["@id"]
+        id_to_text[id] = text["#text"]
+    frames_dict = {}
+    x_max = -1
+    x_min = 2000
+    y_max = -1
+    y_min = 2000
+    # Find the min
+    for frame in text_boxes:
+        if int(frame["@xmin"]) < x_min:
+            x_min = int(frame["@xmin"])
+        if int(frame["@ymin"]) < y_min:
+            y_min = int(frame["@ymin"])
+        if int(frame["@xmax"]) > x_max:
+            x_max = int(frame["@xmax"])
+        if int(frame["@ymax"]) > y_max:
+            y_max = int(frame["@ymax"])
+
+    for frame in text_boxes:
+        id = frame["@id"]
+        topright = (int(frame["@xmax"]), int(frame["@ymin"]))
+        botleft = (int(frame["@xmin"]), int(frame["@ymax"]))
+        n_tr = (round((topright[0] - x_min) ), round((topright[1] - y_min)))
+        n_bl = (round((botleft[0] - x_min) ), round((botleft[1] - y_min)))
+        next_center = ((n_tr[0]+n_bl[0])/2, (n_tr[1]+n_bl[0])/2)
+        frames_dict[id] = (n_tr, n_bl, next_center)
+
+    toprightmost = list(frames_dict.keys())[0]
+    toprightmostvalue = ((y_max-y_min) - frames_dict[toprightmost][0][1]) + frames_dict[toprightmost][0][0]
+    for id, (tr, bl, c) in frames_dict.items():
+        value = ((y_max-y_min) - tr[1]) + tr[0]
+        if value == toprightmostvalue and tr[1] < frames_dict[toprightmost][0][1]:
+            toprightmost = id
+        elif value > toprightmostvalue:
+            toprightmost = id
+            toprightmostvalue = value
+
+    visited = set()
+    text_box_order = []
+    visited.add(toprightmost)
+    text_box_order.append(toprightmost)
+    cur_center = frames_dict[toprightmost][2]
+    while len(visited) < len(text_boxes):
+        min_dist = 99999999
+        next_box = None
+        next_center = None
+        for id, (tr, bl, c) in frames_dict.items():
+            if id in visited:
+                continue
+            dist = ((cur_center[0] - c[0])**2 + (cur_center[1] - c[1])**2)**0.5
+            if dist < min_dist:
+                next_box = id
+                min_dist = dist
+                next_center = c
+        visited.add(next_box)
+        text_box_order.append(next_box)
+        cur_center = next_center
+
+    final_order = []
+    for box_id in text_box_order:
+        final_order.append(id_to_text[box_id])
+    return final_order
 
 def text_in_frames(title, page_no) -> Dict[str, List[Dict[str, Any]]]:
     data = annotations(title, page_no)
@@ -32,12 +109,13 @@ def text_in_frames(title, page_no) -> Dict[str, List[Dict[str, Any]]]:
                  max(0, min(text_botright[1], frame_botright[1]) - max(text_topleft[1], frame_topleft[1]))
             areas[frame["@id"]] = SI
         best_frame = max(areas.items(), key=operator.itemgetter(1))[0]
+        if areas[best_frame] == 0:
+            continue
         frames_to_text[best_frame].append(text)
     return frames_to_text
 
 
 def frame_order(title, page_no) -> List[str]:
-
     data = annotations(title, page_no)
     text = text_in_frames(title, page_no)
     if "frame" not in data:
@@ -97,11 +175,11 @@ def _frame_order_yonkoma(frames):
         n_bl = (round((botleft[0] - x_min) / d_x), round((botleft[1] - y_min) / d_y))
         frames_dict[id] = (n_tr, n_bl)
 
-    a = sorted(frames_dict.items(), key=lambda x: x[1][0][0]*mesh - x[1][0][1], reverse=True)
+    a = sorted(frames_dict.items(), key=lambda x: x[1][0][0] * mesh - x[1][0][1], reverse=True)
     return [id for (id, _) in a]
 
-# noinspection DuplicatedCode
-def _frame_order(frames) -> List[str]:
+
+def _frame_order(frames,mesh=20) -> List[str]:
     # id : ((top right point),(bottom left point))
     if len(frames) == 0:
         return []
@@ -258,6 +336,6 @@ def _frame_order(frames) -> List[str]:
         if len(S) == 0:
             a = set(frames_after.keys())
             b = set().union(*frames_after.values())
-            S = a-b
+            S = a - b
     assert len(L) == len(frames)
     return L
