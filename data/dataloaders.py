@@ -25,7 +25,7 @@ def scores(x):
 
 
 class WikiData(Dataset):
-    def __init__(self, wikijsonpath, offset=0, divisions=10):
+    def __init__(self, wikijsonpath, offset=0, divisions=50):
         self.offset = offset
         self.divisions = divisions
         with open(wikijsonpath) as f:
