@@ -14,6 +14,8 @@ def listwise_ranking_loss(y, target) -> torch.Tensor:
 
 
 def listMLE(y, target, eps=1e-10, padd=-1):
+    y =y.view(1,-1)
+    target = target.view(1,-1)
     random_indices = torch.randperm(y.shape[-1])
     y_pred_shuffled = y[:, random_indices]
     y_true_shuffled = target[:, random_indices]

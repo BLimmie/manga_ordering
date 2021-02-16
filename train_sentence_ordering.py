@@ -6,7 +6,7 @@ from tqdm import tqdm, trange
 
 from data.dataloaders import WikiLoader
 from models.aon import AONNaive
-from models.loss.loss_functions import listwise_ranking_loss
+from models.loss.loss_functions import listMLE
 
 
 def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5, start_epoch=0):
@@ -22,7 +22,7 @@ def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5
         for i, (x, y) in pbar:
             model_output = model(x)
             y = y.to(device)
-            loss = listwise_ranking_loss(model_output, y)
+            loss = listMLE(model_output, y)
             loss.backward()
             batch_loss += loss.item()
             # Deallocate memory
