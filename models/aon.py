@@ -52,6 +52,12 @@ class AONWithImage(nn.Module):
                                           token_type_ids=token_to_id,
                                           attention_mask=attention_mask).last_hidden_state.squeeze(0)
 
+        # Deallocate memory
+        del input_tokens
+        del encoded_sentences
+        del token_to_id
+        del attention_mask
+
         return self.page_decoder(page_encoding)
 
 
