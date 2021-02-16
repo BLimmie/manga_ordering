@@ -9,12 +9,13 @@ from models.aon import AONNaive
 from models.loss.loss_functions import listwise_ranking_loss
 
 
-def main(epochs=1, batch_size=16, device="cuda:0", lr=0.01, fine_tuning_lr=1e-6):
+def main(epochs=1, batch_size=16, device="cuda:0", lr=0.01, fine_tuning_lr=1e-6, start_epoch=0):
     model = AONNaive(device)
-    dataloader = WikiLoader("jawiki/japanese_wiki_paragraphs.json")
+
     optim = Adam(chain(model.page_encoder.parameters(), (model.page_decoder.parameters())), lr)
     optim_bert = Adam(model.sentence_encoder.parameters(), fine_tuning_lr)
-    for epoch in trange(epochs):
+    for epoch in trange(start_epoch, epochs):
+        dataloader = WikiLoader("jawiki/japanese_wiki_paragraphs.json", offset=epoch)
         optim.zero_grad()
         optim_bert.zero_grad()
         batch_loss = 0
@@ -36,7 +37,7 @@ def main(epochs=1, batch_size=16, device="cuda:0", lr=0.01, fine_tuning_lr=1e-6)
                 optim.zero_grad()
                 optim_bert.zero_grad()
                 torch.cuda.empty_cache()
-    torch.save(model.state_dict(), "aon_naive.pth")
+        torch.save(model.state_dict(), f"aon_pretrained_{epoch}.pth")
 
 
 if __name__ == '__main__':

@@ -25,21 +25,24 @@ def scores(x):
 
 
 class WikiData(Dataset):
-    def __init__(self, wikijsonpath):
+    def __init__(self, wikijsonpath, offset=0, divisions=10):
+        self.offset = offset
+        self.divisions = divisions
         with open(wikijsonpath) as f:
             self.data = json.load(f)
 
     def __getitem__(self, index):
-        x = self.data[index]
+        x = self.data[index * self.divisions + self.offset]
         return scores(x)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data) // self.divisions - 2
 
 
-def WikiLoader(jsonpath, batch_size=1, *args, **kwargs) -> DataLoader:
+def WikiLoader(jsonpath, offset=0, divisions=10, batch_size=1, *args, **kwargs) -> DataLoader:
     assert batch_size == 1, "The models only support batch sizes of 1"
-    return DataLoader(WikiData(jsonpath), batch_size=1, collate_fn=singleton_collate_fn, *args, **kwargs)
+    return DataLoader(WikiData(jsonpath, offset, divisions), batch_size=1, collate_fn=singleton_collate_fn, *args,
+                      **kwargs)
 
 
 class MangaDataNoIMG(Dataset):
