@@ -4,8 +4,8 @@ from typing import Dict, Optional
 
 import xmltodict
 
-from data.constants import root
 from data.books import get_books
+from data.constants import root
 
 
 class AnnotationsWrapper:

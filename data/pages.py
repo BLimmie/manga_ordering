@@ -1,9 +1,9 @@
-import os.path as op
 from typing import List, Tuple
 
 from data.annotations import annotations
-from data.constants import root, degeneracies
 from data.books import get_books
+from data.constants import degeneracies
+
 
 def get_pages(with_text=False) -> List[Tuple[str, int]]:
     result = []
@@ -19,6 +19,3 @@ def get_pages(with_text=False) -> List[Tuple[str, int]]:
                     continue
             result.append((book, i))
     return result
-
-
-

@@ -35,14 +35,14 @@ def find_midpoint(title, page_no) -> int:
         column_sum = image_shape_exception[1] * 255 - np.sum(new_img, axis=0)
     else:
         column_sum = image_shape[1] * 255 - np.sum(new_img, axis=0)
-    zeroes = [i[0] for i in np.argwhere(column_sum==0)]
+    zeroes = [i[0] for i in np.argwhere(column_sum == 0)]
     if len(zeroes) == 0:
         if not (np.min(column_sum) * 402 < np.sum(column_sum)):
             mid = 100
         else:
             mid = np.argmin(column_sum)
         return mid + mid_min
-    return zeroes[len(zeroes)//2] + mid_min
+    return zeroes[len(zeroes) // 2] + mid_min
 
 
 def page_annotations_visual(title: str, page_no: int) -> Optional[np.ndarray]:

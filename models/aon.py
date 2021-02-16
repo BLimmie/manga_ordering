@@ -3,6 +3,7 @@ from typing import Union
 import torch
 import torch.nn as nn
 from torchvision.models.resnet import resnet18
+
 from .encoders import sentence_encoder_model, naive_page_encoder_decoder
 from .preprocessing.tokenization import tokenize
 
@@ -45,13 +46,14 @@ class AONWithImage(nn.Module):
 
         if not pretraining:
             assert image is not None
-            image_vectors = self.image_encoder(image).view(1,-1,768)
+            image_vectors = self.image_encoder(image).view(1, -1, 768)
             encoded_sentences = torch.cat([encoded_sentences, image_vectors], dim=1)
         page_encoding = self.page_encoder(inputs_embeds=encoded_sentences,
                                           token_type_ids=token_to_id,
                                           attention_mask=attention_mask).last_hidden_state.squeeze(0)
 
         return self.page_decoder(page_encoding)
+
 
 class AONNaive(AONWithImage):
     def forward(self, page_texts):

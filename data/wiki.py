@@ -1,6 +1,8 @@
-from glob import glob
 import json
+from glob import glob
+
 from tqdm import tqdm
+
 jsonList = []
 for path in glob("./jawiki/*/wiki_*", recursive=True):
     with open(path) as f:

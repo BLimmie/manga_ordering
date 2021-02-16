@@ -1,6 +1,6 @@
 root = "/home/brian/manga_ordering"
-image_shape = (1654,1170)
-image_shape_exception = (2960,2164)
+image_shape = (1654, 1170)
+image_shape_exception = (2960, 2164)
 size_title_exception = "PrayerHaNemurenai"
 degeneracies = [
     ("Arisa", 1),

@@ -8,15 +8,14 @@ from data.image_processing import frame_crosses_middle, find_midpoint
 
 def text_order(title, page_no) -> List[str]:
     frames = frame_order(title, page_no)
-    text = text_in_frames(title,page_no)
+    text = text_in_frames(title, page_no)
     final_order = []
     for frame in frames:
         final_order.extend(text_order_in_frame(text[frame]))
     return final_order
 
 
-def text_order_in_frame(text_boxes: List[Dict[str,Any]]) -> List[str]:
-
+def text_order_in_frame(text_boxes: List[Dict[str, Any]]) -> List[str]:
     if len(text_boxes) == 0:
         return []
     id_to_text = {}
@@ -43,15 +42,15 @@ def text_order_in_frame(text_boxes: List[Dict[str,Any]]) -> List[str]:
         id = frame["@id"]
         topright = (int(frame["@xmax"]), int(frame["@ymin"]))
         botleft = (int(frame["@xmin"]), int(frame["@ymax"]))
-        n_tr = (round((topright[0] - x_min) ), round((topright[1] - y_min)))
-        n_bl = (round((botleft[0] - x_min) ), round((botleft[1] - y_min)))
-        next_center = ((n_tr[0]+n_bl[0])/2, (n_tr[1]+n_bl[0])/2)
+        n_tr = (round((topright[0] - x_min)), round((topright[1] - y_min)))
+        n_bl = (round((botleft[0] - x_min)), round((botleft[1] - y_min)))
+        next_center = ((n_tr[0] + n_bl[0]) / 2, (n_tr[1] + n_bl[0]) / 2)
         frames_dict[id] = (n_tr, n_bl, next_center)
 
     toprightmost = list(frames_dict.keys())[0]
-    toprightmostvalue = ((y_max-y_min) - frames_dict[toprightmost][0][1]) + frames_dict[toprightmost][0][0]
+    toprightmostvalue = ((y_max - y_min) - frames_dict[toprightmost][0][1]) + frames_dict[toprightmost][0][0]
     for id, (tr, bl, c) in frames_dict.items():
-        value = ((y_max-y_min) - tr[1]) + tr[0]
+        value = ((y_max - y_min) - tr[1]) + tr[0]
         if value == toprightmostvalue and tr[1] < frames_dict[toprightmost][0][1]:
             toprightmost = id
         elif value > toprightmostvalue:
@@ -70,7 +69,7 @@ def text_order_in_frame(text_boxes: List[Dict[str,Any]]) -> List[str]:
         for id, (tr, bl, c) in frames_dict.items():
             if id in visited:
                 continue
-            dist = ((cur_center[0] - c[0])**2 + (cur_center[1] - c[1])**2)**0.5
+            dist = ((cur_center[0] - c[0]) ** 2 + (cur_center[1] - c[1]) ** 2) ** 0.5
             if dist < min_dist:
                 next_box = id
                 min_dist = dist
@@ -83,6 +82,7 @@ def text_order_in_frame(text_boxes: List[Dict[str,Any]]) -> List[str]:
     for box_id in text_box_order:
         final_order.append(id_to_text[box_id])
     return final_order
+
 
 def text_in_frames(title, page_no) -> Dict[str, List[Dict[str, Any]]]:
     data = annotations(title, page_no)
@@ -179,7 +179,7 @@ def _frame_order_yonkoma(frames):
     return [id for (id, _) in a]
 
 
-def _frame_order(frames,mesh=20) -> List[str]:
+def _frame_order(frames, mesh=20) -> List[str]:
     # id : ((top right point),(bottom left point))
     if len(frames) == 0:
         return []
