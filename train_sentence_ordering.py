@@ -11,15 +11,24 @@ from models.loss.loss_functions import listMLE
 
 def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5, start_epoch=0):
     model = AONNaive(device)
+    optim = Adam(chain(model.page_encoder.parameters(), (model.page_decoder.parameters())), lr)
+    optim_bert = Adam(model.sentence_encoder.parameters(), fine_tuning_lr)
+    dataloader = WikiLoader("jawiki/japanese_wiki_paragraphs.json")
     for epoch in trange(start_epoch, epochs):
-        optim = Adam(chain(model.page_encoder.parameters(), (model.page_decoder.parameters())), lr)
-        optim_bert = Adam(model.sentence_encoder.parameters(), fine_tuning_lr)
-        dataloader = WikiLoader("jawiki/japanese_wiki_paragraphs.json", offset=epoch)
         optim.zero_grad()
         optim_bert.zero_grad()
         batch_loss = 0
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for i, (x, y) in pbar:
+            if len(x) > 100:
+                if (i + 1) % batch_size == 0:
+                    pbar.set_postfix({"batch_loss": batch_loss})
+                    batch_loss = 0
+                    optim.step()
+                    optim_bert.step()
+                    optim.zero_grad()
+                    optim_bert.zero_grad()
+                continue
             model_output = model(x)
             y = y.to(device)
             loss = listMLE(model_output, y)
@@ -35,7 +44,6 @@ def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5
                 optim_bert.step()
                 optim.zero_grad()
                 optim_bert.zero_grad()
-                torch.cuda.empty_cache()
         torch.save(model.state_dict(), f"aon_pretrained_{epoch:02d}.pth")
 
 
