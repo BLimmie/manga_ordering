@@ -39,7 +39,7 @@ class WikiData(Dataset):
         return len(self.data) // self.divisions - 2
 
 
-def WikiLoader(jsonpath, offset=0, divisions=10, batch_size=1, *args, **kwargs) -> DataLoader:
+def WikiLoader(jsonpath, offset=0, divisions=5, batch_size=1, *args, **kwargs) -> DataLoader:
     assert batch_size == 1, "The models only support batch sizes of 1"
     return DataLoader(WikiData(jsonpath, offset, divisions), batch_size=1, collate_fn=singleton_collate_fn, *args,
                       **kwargs)

@@ -31,7 +31,22 @@ class AONWithImage(nn.Module):
             if tensor.shape[1] > 512:
                 tensor = tensor[:, :512]
             input_tokens[key] = tensor.to(self.device)
-        encoded_sentences = self.sentence_encoder(**input_tokens).pooler_output.unsqueeze(0)
+        minibatches = []
+        if len(input_tokens["input_ids"] > 5):
+            input_ids_split = torch.split(input_tokens["input_ids"], 5)
+            token_ids_split = torch.split(input_tokens["token_type_ids"], 5)
+            attention_mask_split = torch.split(input_tokens["attention_mask"], 5)
+            num_splits = len(input_tokens["input_ids"]) // 5 + int(len(input_tokens["input_ids"]) % 5 != 0)
+            for i in range(num_splits):
+                minibatches.append({"input_ids": input_ids_split[i],
+                                    "token_type_ids": token_ids_split[i],
+                                    "attention_mask": attention_mask_split[i]})
+        else:
+            minibatches.append(input_tokens)
+        encoded_sentences = []
+        for minibatch in minibatches:
+            encoded_sentences.append(self.sentence_encoder(**minibatch).pooler_output.unsqueeze(0))
+        encoded_sentences = torch.cat(encoded_sentences, dim=1)
         if pretraining:
             attention_mask = torch.ones((1, len(encoded_sentences)), device=self.device)
         else:
@@ -51,12 +66,6 @@ class AONWithImage(nn.Module):
         page_encoding = self.page_encoder(inputs_embeds=encoded_sentences,
                                           token_type_ids=token_to_id,
                                           attention_mask=attention_mask).last_hidden_state.squeeze(0)
-
-        # Deallocate memory
-        del input_tokens
-        del encoded_sentences
-        del token_to_id
-        del attention_mask
 
         return self.page_decoder(page_encoding)
 
