@@ -14,14 +14,13 @@ def listwise_ranking_loss(y, target) -> torch.Tensor:
 
 
 def listMLE(y, target, eps=1e-10):
-    y =y.view(1,-1)
-    target = target.view(1,-1)
+    y = y.view(1, -1)
+    target = target.view(1, -1)
     random_indices = torch.randperm(y.shape[-1])
     y_pred_shuffled = y[:, random_indices]
     y_true_shuffled = target[:, random_indices]
 
     y_true_sorted, indices = y_true_shuffled.sort(descending=True, dim=-1)
-
 
     preds_sorted_by_true = torch.gather(y_pred_shuffled, dim=1, index=indices)
     max_pred_values, _ = preds_sorted_by_true.max(dim=1, keepdim=True)
