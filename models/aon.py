@@ -48,19 +48,20 @@ class AONWithImage(nn.Module):
             encoded_sentences.append(self.sentence_encoder(**minibatch).pooler_output.unsqueeze(0))
         encoded_sentences = torch.cat(encoded_sentences, dim=1)
         if pretraining:
-            attention_mask = torch.ones((1, len(encoded_sentences)), device=self.device)
+            attention_mask = torch.ones((1, encoded_sentences.shape[1]), device=self.device)
         else:
-            attention_mask = torch.ones((1, len(encoded_sentences) + self.image_encoder_output_size),
+            attention_mask = torch.ones((1, encoded_sentences.shape[1] + self.image_vectors),
                                         device=self.device)
 
         if pretraining:
             token_to_id = None
         else:
-            token_to_id = torch.cat((torch.zeros((1, len(encoded_sentences)), device=self.device),
-                                     torch.ones((1, self.image_vectors), device=self.device)), dim=1)
+            token_to_id = torch.cat((torch.zeros((1, encoded_sentences.shape[1]), device=self.device, dtype=torch.long),
+                                     torch.ones((1, self.image_vectors), device=self.device, dtype=torch.long)), dim=1)
 
         if not pretraining:
             assert image is not None
+            image = image.to(self.device)
             image_vectors = self.image_encoder(image).view(1, -1, 768)
             encoded_sentences = torch.cat([encoded_sentences, image_vectors], dim=1)
         page_encoding = self.page_encoder(inputs_embeds=encoded_sentences,

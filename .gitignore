@@ -131,3 +131,5 @@ dmypy.json
 /manga109/
 .idea/
 /jawiki/
+*.pth
+/test.py

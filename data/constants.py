@@ -7,3 +7,5 @@ degeneracies = [
     ("Belmondo", 25)
 ]
 yonkoma = ["OL_Lunch"]
+validation = ["YoumaKourin", "MAD_STONE", "EienNoWith", "Nekodama", "SonokiDeABC"]
+testing = ["BakuretsuKungFuGirl", "PLANET7", "That'sIzumiko", "YamatoNoHane", "HinagikuKenzan"]
