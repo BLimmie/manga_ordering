@@ -7,18 +7,22 @@ from transformers import BertModel, BertConfig
 
 
 class FFNN(nn.Module):
-    def __init__(self, input_dim=768, num_layers=4):
+    def __init__(self, input_dim=768, score=True, num_layers=4):
         assert num_layers > 0, "FFNN cannot have non-positive layers"
         super(FFNN, self).__init__()
         self.layers = [Linear(input_dim, input_dim) for _ in range(num_layers - 1)]
         self.fc = Linear(input_dim, 1)
         self.gelu = nn.GELU()
+        self.score = score
 
     def forward(self, x):
         for l in self.layers:
             x = l(x)
-        output = self.gelu(self.fc(x))
-        return output.squeeze(1)
+        if self.score:
+            output = self.gelu(self.fc(x))
+            return output.squeeze(1)
+        else:
+            return self.fc(x)
 
     def to(self, device=torch.device("cpu"), *args, **kwargs):
         super(FFNN, self).to(device, *args, **kwargs)

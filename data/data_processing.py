@@ -4,8 +4,10 @@ from typing import Any, List, Dict
 from data.annotations import annotations
 from data.constants import yonkoma
 from data.image_processing import frame_crosses_middle, find_midpoint
-
-
+from python_tsp.heuristics import solve_tsp_simulated_annealing
+from python_tsp.exact import solve_tsp_dynamic_programming
+from python_tsp.distances import great_circle_distance_matrix
+import numpy as np
 def text_order(title, page_no) -> List[str]:
     frames = frame_order(title, page_no)
     text = text_in_frames(title, page_no)
@@ -57,30 +59,28 @@ def text_order_in_frame(text_boxes: List[Dict[str, Any]]) -> List[str]:
             toprightmost = id
             toprightmostvalue = value
 
-    visited = set()
-    text_box_order = []
-    visited.add(toprightmost)
-    text_box_order.append(toprightmost)
-    cur_center = frames_dict[toprightmost][2]
-    while len(visited) < len(text_boxes):
-        min_dist = 99999999
-        next_box = None
-        next_center = None
-        for id, (tr, bl, c) in frames_dict.items():
-            if id in visited:
-                continue
-            dist = ((cur_center[0] - c[0]) ** 2 + (cur_center[1] - c[1]) ** 2) ** 0.5
-            if dist < min_dist:
-                next_box = id
-                min_dist = dist
-                next_center = c
-        visited.add(next_box)
-        text_box_order.append(next_box)
-        cur_center = next_center
+    idx_to_id = {0: toprightmost}
+    i = 1
+    for id, (tr,bl,c) in frames_dict.items():
+        if id == toprightmost:
+            continue
+        idx_to_id[i] = id
+        i += 1
+
+    sources = []
+    for i in range(len(idx_to_id)):
+        sources.append(frames_dict[idx_to_id[i]][2])
+
+    distance_matrix = great_circle_distance_matrix(np.array(sources))
+    distance_matrix[:,0] = 0
+    if len(sources) > 20:
+        text_box_order, _ = solve_tsp_simulated_annealing(distance_matrix)
+    else:
+        text_box_order, _ = solve_tsp_dynamic_programming(distance_matrix)
 
     final_order = []
-    for box_id in text_box_order:
-        final_order.append(id_to_text[box_id])
+    for idx in text_box_order:
+        final_order.append(id_to_text[idx_to_id[idx]])
     return final_order
 
 

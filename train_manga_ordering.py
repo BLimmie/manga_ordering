@@ -4,17 +4,20 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 from data.dataloaders import MangaLoader
 from models.aon import AONWithImage
-from models.loss.loss_functions import listMLE
+from models.loss.loss_functions import listMLE, pointwise_ranking_loss
+import os
 
-
-def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5, start_epoch=0, start_index=0,
-         max_batch_length=20, with_images=False, patience=3):
+def main(epochs=7, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5, start_epoch=0, start_index=0,
+         max_batch_length=20, with_images=False, patience=3,loss_fn="mle", ckpt_dir="ckpt", masked_images=True):
+    if not os.path.isdir(ckpt_dir):
+        os.mkdir(ckpt_dir)
+    loss_fn = listMLE if loss_fn == "mle" else pointwise_ranking_loss
     model = AONWithImage(device)
     model.load_state_dict(torch.load("aon_pretrained_epoch_02.pth", map_location=device))
-
-    train_loader = MangaLoader("manga109/sentence_order.json", "manga109/masked_images", images=with_images,
+    image_dir = "masked_images" if masked_images else "images"
+    train_loader = MangaLoader("manga109/sentence_order.json", f"manga109/{image_dir}", images=with_images,
                                split="train")
-    val_loader = MangaLoader("manga109/sentence_order.json", "manga109/masked_images", images=with_images,
+    val_loader = MangaLoader("manga109/sentence_order.json", f"manga109/{image_dir}", images=with_images,
                              split="validation", shuffle=False)
     optim = AdamW([{'params': model.sentence_encoder.parameters(), 'lr': fine_tuning_lr},
                    {'params': model.page_encoder.parameters()},
@@ -41,7 +44,7 @@ def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5
                     param.requires_grad = True
             model_output = model(x, img, pretraining=not with_images)
             y = y.to(device)
-            loss = listMLE(model_output[:len(y)], y)
+            loss = loss_fn(model_output[:len(y)], y)
             loss.backward()
             batch_loss += loss.item()
             # Deallocate memory
@@ -61,12 +64,12 @@ def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5
                     continue
                 model_output = model(x, img, pretraining=not with_images)
                 y = y.to(device)
-                loss = listMLE(model_output, y)
+                loss = loss_fn(model_output[:len(y)], y)
                 val_loss += loss.item()
                 del loss
                 del y
             print(f"Validation Loss - Epoch {epoch}: {val_loss}")
-            if val_loss > min_val_los != -1:
+            if val_loss >= min_val_los != -1:
                 if strikes == 0:
                     break
                 strikes -= 1
@@ -74,7 +77,7 @@ def main(epochs=1, batch_size=400, device="cuda:0", lr=5e-3, fine_tuning_lr=5e-5
                 min_val_los = val_loss
                 best_epoch = epoch
                 strikes = patience
-        torch.save(model.state_dict(), f"ckpt/{model_type}_{epoch:02d}.pth")
+        torch.save(model.state_dict(), f"{ckpt_dir}/{model_type}_{epoch:02d}.pth")
     print(best_epoch)
 
 
@@ -82,16 +85,19 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument("--epochs", type=int, default=7)
     parser.add_argument("--batch_size", default=400)
     parser.add_argument("--device", default="cuda:0")
-    parser.add_argument("--lr", default=1e-3)
-    parser.add_argument("--fine_tuning_lr", default=1e-5)
+    parser.add_argument("--lr", default=5e-3)
+    parser.add_argument("--fine_tuning_lr", default=5e-5)
     parser.add_argument("--start_epoch", default=0)
     parser.add_argument("--start_index", default=0)
     parser.add_argument("--max_batch_length", default=60)
     parser.add_argument("--with_images", action="store_true")
     parser.add_argument("--patience", default=3)
+    parser.add_argument("--loss_fn", default="pointwise")
+    parser.add_argument("--ckpt_dir", default="ckpt")
+    parser.add_argument("--masked_images", action="store_true")
     args = parser.parse_args()
     main(
         epochs=args.epochs,
@@ -103,5 +109,8 @@ if __name__ == '__main__':
         start_index=args.start_index,
         max_batch_length=args.max_batch_length,
         with_images=args.with_images,
-        patience=args.patience
+        patience=args.patience,
+        loss_fn=args.loss_fn,
+        ckpt_dir=args.ckpt_dir,
+        masked_images=args.masked_images
     )

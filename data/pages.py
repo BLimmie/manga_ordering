@@ -14,6 +14,8 @@ def get_pages_partition(split="all", *args, **kwargs):
         include = validation
     elif split == "test":
         include = testing
+    elif split == "smoke":
+        include = ["YouchienBoueigumi"]
     elif split == "all" or split == "train":
         include = None
     else:
