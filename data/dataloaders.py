@@ -81,6 +81,60 @@ class PairwiseWikiData(Dataset):
         return len(self.labels)
 
 
+class SentenceDataset(Dataset):
+    def __init__(self, sentences):
+
+        self.tokenizer = BertTokenizer.from_pretrained("cl-tohoku/bert-base-japanese")
+        first = []
+        second = []
+        self.pos = []
+
+        for j in range(len(sentences)):
+            for k in range(j + 1, len(sentences)):
+                sent1, sent2 = sentences[j], sentences[k]
+                s1i = self.tokenizer.encode(sent1)
+                s2i = self.tokenizer.encode(sent2)
+                if len(s1i) < 50:
+                    sent2 = self.tokenizer.decode(s2i[:100 - len(s1i)])
+                elif len(s2i) < 50:
+                    sent1 = self.tokenizer.decode(s1i[:100 - len(s2i)])
+                else:
+                    sent1 = self.tokenizer.decode(s1i[:50])
+                    sent2 = self.tokenizer.decode(s2i[:50])
+                first.append(sent1)
+                second.append(sent2)
+                self.pos.append((j, k))
+        self.data = self.tokenizer(first, second, add_special_tokens=True, padding=True,
+                                   return_tensors="pt")
+
+    def __getitem__(self, idx):
+        encodings = {key: val[idx].clone().detach() for key, val in self.data.items()}
+        return encodings
+
+    def __len__(self):
+        return len(self.data["input_ids"])
+
+
+class PageDataset(SentenceDataset):
+    def __init__(self, data, imagepath, page):
+        self.page = page
+        self.imagepath = imagepath
+        self.transform = Resize((1170, 1654))
+        sentences = data[page[0]][str(page[1])]
+        super().__init__(sentences)
+
+    def __getitem__(self, idx):
+        encodings = super().__getitem__(idx)
+        img = read_image(op.join(self.imagepath, self.page[0], f"{self.page[1]:03d}.jpg")).float().div(255)
+        if img.shape != torch.Size([3, 1170, 1654]):
+            img = self.transform(img)
+        encodings["img"] = img
+        return encodings
+
+    def __len__(self):
+        return len(self.data["input_ids"])
+
+
 def WikiLoader(jsonpath, offset=0, divisions=5, batch_size=1, test=False, *args, **kwargs) -> DataLoader:
     assert batch_size == 1, "The models only support batch sizes of 1"
     return DataLoader(WikiData(jsonpath, offset, divisions, test), batch_size=1, collate_fn=singleton_collate_fn, *args,
@@ -190,6 +244,7 @@ class PairwiseMangaData(PairwiseMangaDataNoIMG):
 
     def __len__(self):
         return len(self.labels)
+
 
 def MangaLoader(jsonpath, imagepath=None, images=False, batch_size=1, split="all", *args, **kwargs) -> DataLoader:
     assert batch_size == 1, "The models only support batch sizes of 1"

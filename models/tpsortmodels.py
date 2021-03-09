@@ -23,10 +23,10 @@ class MMOrderModel(nn.Module):
         self.image_model = self.image_model.to(device)
         self.classifier = self.classifier.to(device)
         self.device = device
-    def forward(self, image, *args, **kwargs):
+    def forward(self, *args, **kwargs):
         for key, t in kwargs.items():
             kwargs[key] = t.to(self.device)
-        image = image.to(self.device)
+        image = kwargs.pop("img", None)
         labels = kwargs.pop("labels", None)
         image_encoding = self.image_model(image)
         sentences_encoding = self.base_model(*args, **kwargs).pooler_output
