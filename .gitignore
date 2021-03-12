@@ -133,3 +133,4 @@ dmypy.json
 /jawiki/
 *.pth
 /test.py
+/pytorch_model.bin

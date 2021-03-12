@@ -74,9 +74,9 @@ def convert_to_graph(logits, positions):
         pos_s1, pos_s2 = pos[0], pos[1]
 
         if pred == 0:
-            g.addEdge(pos_s2, pos_s1)
-        elif pred == 1:
             g.addEdge(pos_s1, pos_s2)
+        elif pred == 1:
+            g.addEdge(pos_s2, pos_s1)
 
     while g.isCyclic():
         g.isCyclic()
