@@ -9,7 +9,7 @@ model = base_order_model()
 
 training_args = TrainingArguments(
     output_dir="ckpt",
-    num_train_epochs=100,
+    num_train_epochs=15,
     per_device_train_batch_size=40,
     learning_rate=5e-6,
     warmup_steps=500,
@@ -28,7 +28,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_set,
     eval_dataset=valid_set,
-    callbacks=[EarlyStoppingCallback(3)]
+    callbacks=[EarlyStoppingCallback(2)]
 )
 torch.save(model.state_dict(), "naive.pth")
 trainer.train()
