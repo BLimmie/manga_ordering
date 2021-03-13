@@ -10,25 +10,22 @@ def base_order_model() -> BertForSequenceClassification:
     return BertForSequenceClassification.from_pretrained(model_base, num_labels=2)
 
 class MMOrderModel(nn.Module):
-    def __init__(self, image_encoding_size=768, load_from_pretrained=None,device="cuda:0",huggingface_trainer=True):
+    def __init__(self, image_encoding_size=768, load_from_pretrained=None,device="cuda:0"):
         super(MMOrderModel, self).__init__()
         self.base_model = base_order_model()
-        self.huggingface_trainer = huggingface_trainer
         if load_from_pretrained is not None:
             self.base_model.load_state_dict(torch.load(load_from_pretrained))
         self.base_model = self.base_model.base_model
         self.image_model = resnet18(num_classes=image_encoding_size)
         self.classifier = FFNN(input_dim=768+image_encoding_size, num_layers=8, score=False)
         self.loss_fn = BCEWithLogitsLoss()
-        if not huggingface_trainer:
-            self.base_model = self.base_model.to(device)
-            self.image_model = self.image_model.to(device)
-            self.classifier = self.classifier.to(device)
-            self.device = device
+        self.base_model = self.base_model.to(device)
+        self.image_model = self.image_model.to(device)
+        self.classifier = self.classifier.to(device)
+        self.device = device
     def forward(self, *args, **kwargs):
-        if not self.huggingface_trainer:
-            for key, t in kwargs.items():
-                kwargs[key] = t.to(self.device)
+        for key, t in kwargs.items():
+            kwargs[key] = t.to(self.device)
         image = kwargs.pop("img", None)
         labels = kwargs.pop("labels", None)
         image_encoding = self.image_model(image)
