@@ -15,8 +15,8 @@ training_args = TrainingArguments(
     warmup_steps=0,
     weight_decay=0.01,
     logging_dir='./logs',
-    logging_steps=len(train_set) // 25 + 1,
-    save_steps=len(train_set) // 25 + 1,
+    logging_steps=len(train_set) // 10 + 1,
+    save_steps=len(train_set) // 10 + 1,
     save_total_limit=2,
     dataloader_num_workers=6
 )
