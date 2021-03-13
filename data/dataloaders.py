@@ -240,7 +240,8 @@ class PairwiseMangaData(PairwiseMangaDataNoIMG):
 
         if img.shape != torch.Size([3, 1170, 1654]):
             img = self.transform(img)
-        return encodings, img
+        encodings["img"] = img
+        return encodings
 
     def __len__(self):
         return len(self.labels)
