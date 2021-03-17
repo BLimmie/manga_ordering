@@ -62,7 +62,7 @@ class Graph:
         return False
 
 
-def convert_to_graph(logits, positions):
+def convert_to_graph(logits, positions, flipped=False):
     # get no vertices (len logits = n(n-1)/2
     nvert = int((2 * len(logits)) ** 0.5)+1
     # create graph obj
@@ -70,7 +70,10 @@ def convert_to_graph(logits, positions):
 
     # read pred label
     for logit, pos in zip(logits, positions):
-        pred = 1 if logit > 0 else 0
+        if flipped:
+            pred = 1 if logit < 0 else 0
+        else:
+            pred = 1 if logit > 0 else 0
         pos_s1, pos_s2 = pos[0], pos[1]
 
         if pred == 0:
